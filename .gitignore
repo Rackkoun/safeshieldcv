@@ -1,3 +1,10 @@
 # SSCV gitignore
-# configs
+# configs folder
 configs
+
+# pyenv and virtual env
+.python-version
+.env
+.venv
+venv
+.sscvenv
