@@ -18,11 +18,15 @@ from datetime import datetime
 
 # 1. Detector
 class YOLO_ONNXDetector:
-    def __init__(self, model_path, conf_threshold=0.25):
+    def __init__(self, model_path, conf_threshold=0.45):
         self.conf_threshold = conf_threshold
         try:
             # Initialize Session
-            self.session = onnxrt.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+            # OPTIMIZATION: Set session options for CPU speed
+            options = onnxrt.SessionOptions()
+            options.intra_op_num_threads = 4 # Adjust based on CPU cores
+            options.graph_optimization_level = onnxrt.GraphOptimizationLevel.ORT_ENABLE_ALL
+            self.session = onnxrt.InferenceSession(model_path, sess_options=options, providers=['CPUExecutionProvider'])
             self.input_name = self.session.get_inputs()[0].name
             self.output_name = self.session.get_outputs()[0].name
             # Get model input dimensions (usually 640x640)
@@ -86,7 +90,7 @@ class WebCamProcessing(QWidget):
         self.classes = ["helmet", "gloves", "vest", "boots", "goggles"]
         self.colors = [(255, 0, 0), (0, 255, 0), (0, 165, 255), (128, 128, 0), (235, 156, 48)]
         
-        self.detector = YOLO_ONNXDetector(model_path) if model_path else None
+        self.detector = YOLO_ONNXDetector(model_path, conf_threshold=0.5) if model_path else None
         
         self.video_label = QLabel()
         self.video_label.setStyleSheet("background-color: black;")
@@ -98,7 +102,11 @@ class WebCamProcessing(QWidget):
 
     def start_camera(self):
         self.cap = cv2.VideoCapture(0)
-        self.timer.start(30)
+        # Capture at lower resolution to speed up pre-processing if needed
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.timer.start(1) # Run as fast as processing allows
+        # self.timer.start(30)
         return self.cap.isOpened()
 
     def stop_camera(self):
@@ -142,7 +150,13 @@ class WebCamProcessing(QWidget):
             rgb_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_img.shape
             qt_img = QImage(rgb_img.data, w, h, ch * w, QImage.Format.Format_RGB888)
-            self.video_label.setPixmap(QPixmap.fromImage(qt_img).scaled(self.video_label.size(), Qt.AspectRatioMode.KeepAspectRatio))
+            # Scaling is expensive; only scale if the label size is different from frame size
+            pixmap = QPixmap.fromImage(qt_img)
+            self.video_label.setPixmap(pixmap.scaled(
+                self.video_label.size(), 
+                Qt.AspectRatioMode.KeepAspectRatio, 
+                Qt.TransformationMode.FastTransformation # Fast is better for FPS than Smooth
+            ))
 
 # 3. Main app
 class SafeShieldCV(QWidget):
