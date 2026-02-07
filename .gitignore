@@ -10,3 +10,5 @@ venv
 .sscvenv
 # ignore data dir
 data/
+# logs
+logs/
