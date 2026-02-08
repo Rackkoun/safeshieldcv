@@ -16,7 +16,7 @@ EXPORT_DIR.mkdir(parents=True, exist_ok=True)
 TARGET_RESOLUTION = (1280, 720)
 
 def main():
-    model_path = MODEL_DIR / "sscv_yolo26n.pt"
+    model_path = MODEL_DIR / "sscv_yolo26n_v2.pt"
     model = YOLO(str(model_path)) # Path to string
 
     video_path = VIDEOS_DIR / "test_ppe_vid_01.mp4"
@@ -32,7 +32,7 @@ def main():
     if fps <= 0:
         fps = 25
     
-    output_path = EXPORT_DIR / "ppe_detection_output_02.mp4"
+    output_path = EXPORT_DIR / "ppe_detection_output_02_v2.mp4"
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(str(output_path), fourcc, fps, TARGET_RESOLUTION)
 
@@ -49,7 +49,7 @@ def main():
         frame_resized = cv2.resize(frame, TARGET_RESOLUTION)
         
         # Inference
-        results = model(frame_resized, conf=0.25, iou=0.6, verbose=False)
+        results = model(frame_resized, conf=0.25, iou=0.7, verbose=False)
 
         # Visualize
         annotated_frame = results[0].plot()
