@@ -180,7 +180,7 @@ class SafeShieldCV(QWidget):
         ctrl_layout.addWidget(self.stop_btn)
         
         # Video Container
-        model_path = Path(__file__).resolve().parents[1] / "outputs" / "sscv_yolo26s.onnx"
+        model_path = Path(__file__).resolve().parents[1] / "outputs" / "sscv_yolo26n_v2.onnx"
         self.webcam_container = WebCamProcessing(str(model_path))
         
         left_layout.addLayout(ctrl_layout)
