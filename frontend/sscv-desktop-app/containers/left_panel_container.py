@@ -15,7 +15,8 @@ class SSCV_VideoProcessingContainer(SSCVColor):
         model_path = Path(__file__).resolve().parents[1] / "models" / "sscv_yolo26n_v2.onnx"
         print(f"[SSCV_VID_PROC] model_path: {model_path}")
         # init webcam
-        self.webcam_processing = WebcamProcessing(str(model_path), conf_threshold=0.45)
+        conf_threshold = 0.25
+        self.webcam_processing = WebcamProcessing(str(model_path), conf_threshold=conf_threshold)
         # set up layout
         video_layout = QVBoxLayout()
         video_layout.setContentsMargins(0, 0, 0, 0)
@@ -90,7 +91,7 @@ class SSCV_LeftTopContainer(QWidget):
 # bottom layout
 class SSCV_LeftBottomContainer(SSCVColor):
     def __init__(self):
-        super().__init__("lightblue")
+        super().__init__("#7f8c8d")
         self.setContentsMargins(0, 0, 0, 0)
 
 class SSCV_LeftMainContainer(QWidget):

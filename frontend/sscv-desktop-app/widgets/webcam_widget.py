@@ -121,7 +121,7 @@ class SSCV_YOLOONNXDetector:
 class WebcamProcessing(QWidget):
     """Widget class for displaying webcam feed with YOLO detection"""
 
-    def __init__(self, model_path=None, conf_threshold=0.5):
+    def __init__(self, model_path=None, conf_threshold=0.45):
         super().__init__()
         print(f"[WEBCAM] model_path received: {model_path}")
         print(f"[WEBCAM] file exists? {Path(model_path).exists() if model_path else False}")
