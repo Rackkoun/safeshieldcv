@@ -1,17 +1,29 @@
-# SSCV gitignore
-# configs folder
-configs
+# Python
+__pycache__/
+*.py[codz]
+*.pyo
+*.pyd
 
-# pyenv and virtual env
-.python-version
+# Virtual environments
 .env
 .venv
-venv
-.sscvenv
-# ignore data dir
-data/
-# logs
+venv/
+.python-version
+.sscvenv/
+
+# Logs & outputs
 logs/
-# python compiled files
-__pycache__/
-*$py.class
+data/
+outputs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Qt / PyInstaller
+build/
+dist/

@@ -1,4 +1,8 @@
 # file safeshieldcv/frontend/run.py
+# import os
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+import onnxruntime as onnxrt
+print("[BOOT] ONNXRuntime device:", onnxrt.get_device())
 import sys
 from pathlib import Path
 
