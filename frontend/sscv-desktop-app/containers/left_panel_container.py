@@ -1,11 +1,12 @@
 # safeshieldcv/frontend/sscv-desktop-app/containers/left_panel_container.py
 from pathlib import Path
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QLabel, QTableWidget
 from PyQt6.QtGui import QFont
 from widgets.color_widget import SSCVColor
 from widgets.webcam_widget import WebcamProcessing
 
+from widgets.report_incident_widget import SSCVIncidentReportChart
 class SSCV_VideoProcessingContainer(SSCVColor):
     """Class to handle webcam feed"""
     def __init__(self):
@@ -89,10 +90,18 @@ class SSCV_LeftTopContainer(QWidget):
         self.stop_btn.setEnabled(False)
 
 # bottom layout
-class SSCV_LeftBottomContainer(SSCVColor):
+class SSCV_LeftBottomContainer(QWidget):
     def __init__(self):
-        super().__init__("#7f8c8d")
-        self.setContentsMargins(0, 0, 0, 0)
+        super().__init__()
+        layout = QHBoxLayout()
+        layout.setContentsMargins(5, 5, 5, 5)
+        # chart left
+        self.plotly_chart = SSCVIncidentReportChart()
+        # table right
+        self.table = QTableWidget()
+        layout.addWidget(self.plotly_chart, 2)
+        layout.addWidget(self.table)
+        self.setLayout(layout)
 
 class SSCV_LeftMainContainer(QWidget):
     def __init__(self):
