@@ -172,8 +172,94 @@ class SSCV_RightBotContainer(QWidget):
     """Bottom container to preview generated PPE violation report"""
     def __init__(self):
         super().__init__()
-
+        self.init_ui()
+        
+    
+    def init_ui(self):
         layout = QVBoxLayout()
+        # report config group
+        config_group = QGroupBox("Report Configuration")
+        config_layout = QVBoxLayout()
+        config_group.setLayout(config_layout)
+        # email recipients
+        recipients_layout = QHBoxLayout()
+        recipients_layout.addWidget(QLabel("To:"))
+        self.recipients_input = QLineEdit()
+        self.recipients_input.setPlaceholderText("supervisor@sscv.cm, other@company.com")
+        recipients_layout.addWidget(self.recipients_input)
+        config_layout.addLayout(recipients_layout)
+        # location
+        location_layout = QHBoxLayout()
+        location_layout.addWidget(QLabel("Location:"))
+        self.location_input = QLineEdit()
+        self.location_input.setPlaceholderText("Contruction Zone A")
+        location_layout.addWidget(self.location_input)
+        config_layout.addLayout(location_layout)
+        # add to main layout
+        layout.addWidget(config_group)
+
+        # report preview group
+        preview_group = QGroupBox("Report Preview")
+        preview_layout = QVBoxLayout()
+        self.subject_preview = QLineEdit()
+        # self.subject_preview.setReadOnly(True)
+        self.subject_preview.setStyleSheet(
+            """
+            QLineEdit {
+                background-color: #f8f9fa;
+                color: #000000;
+                border: 1px solid #ced4da;
+                border-radius: 4px;
+                padding: 5px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+            }
+        """
+        )
+        # add subject to layout preview
+        preview_layout.addWidget(QLabel("Subject:"))
+        preview_layout.addWidget(self.subject_preview)
+        # add body to preview layout
+        self.body_preview = QTextEdit()
+        # self.body_preview.setReadOnly(True)
+        self.body_preview.setMaximumHeight(100)
+        self.body_preview.setStyleSheet(
+            """
+            QTextEdit {
+                background-color: #f8f9fa;
+                color: #000000;
+                border: 1px solid #ced4da;
+                border-radius: 4px;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 10pt;
+            }
+        """)
+        preview_layout.addWidget(QLabel("Message:"))
+        preview_layout.addWidget(self.body_preview)
+        preview_group.setLayout(preview_layout)
+        layout.addWidget(preview_group)
+
+        # progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        layout.addWidget(self.progress_bar)
+
+        # status label
+        self.status_label = QLabel("")
+        self.status_label.setStyleSheet("color: #7f8c8d; font-style: italic;")
+        layout.addWidget(self.status_label)
+
+        # btn
+        button_layout = QHBoxLayout()
+        # generate btn
+        self.generate_btn = QPushButton("Generate Report")
+        button_layout.addWidget(self.generate_btn)
+        # send btn
+        self.send_btn = QPushButton("Send Report")
+        button_layout.addWidget(self.send_btn)
+        # cancel btn
+        self.cancel_btn = QPushButton("Cancel")
+        button_layout.addWidget(self.cancel_btn)
+        layout.addLayout(button_layout)
         self.setLayout(layout)
 
 

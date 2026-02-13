@@ -27,3 +27,6 @@ Thumbs.db
 # Qt / PyInstaller
 build/
 dist/
+
+# config files
+.pyqt-preview.toml
