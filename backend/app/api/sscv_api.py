@@ -187,3 +187,96 @@ async def get_incident_endpoint(
         )
     
     return incident
+
+# report generation
+@app.post("/sscv/api/generate", response_model=ReportResponse)
+async def generate_ppe_report_endpoint(
+    request: ReportRequest,
+    db: Session = Depends(get_db)
+):
+    """Generate PPE violation report using Ollama and save to database"""
+    try:
+        logger.info(f"Generating report for: {request.missing_items} at {request.location}")
+        logger.info(f"Received {len(request.image_ref)} image references")
+        logger.info(f"Received {len(request.image_data)} image data items")
+        
+        # Save evidence images if provided
+        saved_image_paths = []
+        if request.image_data and len(request.image_data) > 0:
+            for i, (image_ref, image_data) in enumerate(zip(request.image_ref, request.image_data)):
+                try:
+                    if not image_data:
+                        continue
+                        
+                    # Decode base64 (remove data URL prefix if present)
+                    if image_data.startswith('data:image'):
+                        # Extract base64 from data URL
+                        image_data = image_data.split(',')[1]
+                    
+                    image_bytes = base64.b64decode(image_data)
+                    
+                    # Save to evidence directory
+                    evidence_dir = Path(settings.EVIDENCE_BASE_DIR) / "evidence_storage"
+                    evidence_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    # Create filename with timestamp
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    safe_ref = Path(image_ref).name  # Just the filename, no path
+                    filename = f"{timestamp}_{i}_{safe_ref}"
+                    filepath = evidence_dir / filename
+                    
+                    # Save file
+                    filepath.write_bytes(image_bytes)
+                    saved_image_paths.append(str(filepath))
+                    logger.info(f"Saved evidence image: {filename}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to save image {image_ref}: {e}")
+        
+        # Generate report text using Ollama
+        report_text = ollama_service.generate_ppe_report(
+            date_time=request.date_time,
+            missing_items=request.missing_items,
+            image_ref=request.image_ref,
+            location=request.location
+        )
+        
+        # Create database record
+        now = datetime.now()
+        incident = Incident(
+            violation_type="PPE Violation",
+            missing_items=request.missing_items,
+            location=request.location,
+            evidence_images=request.image_ref,  # Store original references
+            reported_date=now.date(),
+            reported_time=now.time(),
+            report_text=report_text,
+            email_recipients=[],
+            email_sent=False,
+            email_sent_at=None
+        )
+        
+        db.add(incident)
+        db.commit()
+        db.refresh(incident)
+        
+        logger.info(f"[GENERATE PPE] Created incident record: ID={incident.id}")
+        
+        # Create subject
+        clean_items = [item.replace('no_', '') for item in request.missing_items]
+        subject = f"PPE Violation: {', '.join(clean_items)} at {request.location}"
+        logger.warning(f"[SSCV_API::GENERATE PPE](report text):\n{report_text}")
+        return ReportResponse(
+            subject=subject,
+            body=report_text,
+            incident_id=incident.id,
+            incident_ref=f"INC-{incident.id:06d}",
+            success=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to generate report: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate report: {str(e)}"
+        )
