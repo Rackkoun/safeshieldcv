@@ -43,3 +43,5 @@ pydantic-settings==2.12.0
 email-validator
 fastapi==0.128.0
 pydantic==2.12.5
+plotly==6.5.2
+PyQt6-WebEngine==6.10.0

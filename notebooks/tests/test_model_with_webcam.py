@@ -1,5 +1,9 @@
 # file safeshield/notebooks/tests/test_model_with_webcam.py
 import os
+import sys
+print("CWD:", os.getcwd())
+print("sys.path[0]:", sys.path[0])
+print("PATH:", os.environ.get('PATH', '')[:200])  # first 200 chars
 from pathlib import Path
 import onnxruntime as onnxrt
 import cv2
