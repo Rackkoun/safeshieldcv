@@ -112,3 +112,78 @@ async def health_check():
         "services": status_map,
         "timestamp": datetime.now().isoformat()
     }
+
+# incident management
+@app.post("/sscv/api/incidents", response_model=IncidentResponse)
+async def create_incident_endpoint(
+    incident: IncidentCreate,
+    db: Session = Depends(get_db)
+):
+    """Create a new incident record"""
+    try:
+        now = datetime.now()
+        db_incident = Incident(
+            violation_type=incident.violation_type,
+            missing_items=incident.missing_items,
+            location=incident.location,
+            evidence_images=incident.evidence_images,
+            reported_date=now.date(),
+            reported_time=now.time(),
+            report_text=incident.report_text,
+            email_recipients=incident.email_recipients or  [],
+            email_sent=False,
+            email_sent_at=None
+        )
+        
+        db.add(db_incident)
+        db.commit()
+        db.refresh(db_incident)
+        
+        return db_incident
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create incident: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create incident: {str(e)}"
+        )
+
+@app.get("/sscv/api/incidents", response_model=list[IncidentResponse])
+async def list_incidents_endpoint(
+    skip: int = 0,
+    limit: int = 100,
+    date_from: str = None,
+    db: Session = Depends(get_db)
+):
+    """List all incidents with optional filtering"""
+    query = db.query(Incident).order_by(Incident.created_at.desc())
+    
+    if date_from:
+        try:
+            target_date = datetime.strptime(date_from, "%Y-%m-%d").date()
+            query = query.filter(Incident.reported_date >= target_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid date format. Use YYYY-MM-DD"
+            )
+    
+    incidents = query.offset(skip).limit(limit).all()
+    return incidents
+
+@app.get("/sscv/api/incidents/{incident_id}", response_model=IncidentResponse)
+async def get_incident_endpoint(
+    incident_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get specific incident by ID"""
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    
+    if not incident:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Incident {incident_id} not found"
+        )
+    
+    return incident
