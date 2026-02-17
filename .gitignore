@@ -30,4 +30,7 @@ dist/
 
 # config files
 .pyqt-preview.toml
-configs/
+configs
+
+# scripts
+backend/scripts
