@@ -45,7 +45,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# if __name__=="__main__":
-#     print(f"Root path: {SSCV_ROOT_DIR}")
-#     print(f"db name: {DB_NAME}")
