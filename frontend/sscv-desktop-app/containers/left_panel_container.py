@@ -6,9 +6,11 @@ from PyQt6.QtGui import QFont
 from widgets.color_widget import SSCVColor
 from widgets.webcam_widget import WebcamProcessing
 
-from widgets.report_incident_widget import SSCVIncidentReportChart
+from widgets.chart_report_incident_widget import SSCVIncidentReportChart
 class SSCV_VideoProcessingContainer(SSCVColor):
     """Class to handle webcam feed"""
+    # add signal for violation detection
+    violation_detected_sgn = pyqtSignal(list, str)
     def __init__(self):
         super().__init__("black")
         self.setContentsMargins(0, 0, 0, 0)
@@ -18,6 +20,8 @@ class SSCV_VideoProcessingContainer(SSCVColor):
         # init webcam
         conf_threshold = 0.25
         self.webcam_processing = WebcamProcessing(str(model_path), conf_threshold=conf_threshold)
+        # connect webcam signal to update right panel
+        self.webcam_processing.violation_detected_sgn.connect(self.on_violation_detected)
         # set up layout
         video_layout = QVBoxLayout()
         video_layout.setContentsMargins(0, 0, 0, 0)
@@ -31,11 +35,22 @@ class SSCV_VideoProcessingContainer(SSCVColor):
     def stop_webcam(self):
         """Stop webcam capture"""
         return self.webcam_processing.stop_camera()
+    
+    def on_violation_detected(self, missing_items, filename):
+        """handle violation detection and update ui"""
+        # add no + missing ppe equipment to display in the ui
+        violations_display = [f"Missing {item}" for item in missing_items]
+        print(f"[DEBUG] Violation detected in container: {violations_display}, file: {filename}")
+        # emit signal to main window to update right panel
+        # parent = self.parent()
+        # if hasattr(parent, 'violation_alert_sgn'):
+        #     parent.violation_alert_sgn.emit(violations_display, filename)
+        self.violation_detected_sgn.emit(violations_display, filename)
 
 class SSCV_LeftTopContainer(QWidget):
     """Container class to handle webcam processing"""
     
-
+    violation_alert_sgn = pyqtSignal(list, str)
     def __init__(self):
         super().__init__()
         self.main_container = QVBoxLayout()
@@ -44,6 +59,8 @@ class SSCV_LeftTopContainer(QWidget):
 
         # webcam container
         self.webcam_container = SSCV_VideoProcessingContainer()
+        # propagate signal
+        self.webcam_container.violation_detected_sgn.connect(self.violation_alert_sgn.emit)
         # container for btn
         self.controls_layout = QHBoxLayout()
         
@@ -104,6 +121,7 @@ class SSCV_LeftBottomContainer(QWidget):
         self.setLayout(layout)
 
 class SSCV_LeftMainContainer(QWidget):
+    violation_alert_sgn = pyqtSignal(list, str)
     def __init__(self):
         super().__init__()
         self.main_layout = QVBoxLayout()
@@ -114,6 +132,8 @@ class SSCV_LeftMainContainer(QWidget):
         # top and bottom left container
         self.top_container = SSCV_LeftTopContainer()
         self.botton_container = SSCV_LeftBottomContainer()
+        # forward signal from top left container to main
+        self.top_container.violation_alert_sgn.connect(self.violation_alert_sgn.emit)
         
         # add container with stretch factors
         self.main_layout.addWidget(self.top_container, 4)

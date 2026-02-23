@@ -35,3 +35,5 @@ configs/**/*.json
 
 # scripts
 backend/scripts
+# violations evidence dir
+daily_violations

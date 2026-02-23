@@ -9,6 +9,9 @@ from containers.left_panel_container import SSCV_LeftMainContainer
 from containers.right_panel_container import SSCV_RightMainContainer
 
 class SafeShieldCV(QWidget):
+    # main signal for comminication between panels
+    violation_alert_sgn = pyqtSignal(list, str) #(missing items, filename)
+
     def __init__(self):
         super().__init__()
         self.initUI()
@@ -20,6 +23,8 @@ class SafeShieldCV(QWidget):
         # add widgets
         left_panel = SSCV_LeftMainContainer()
         right_panel = SSCV_RightMainContainer()
+        # connect violation signal
+        left_panel.violation_alert_sgn.connect(self.handle_violation_update)
         main_layout.addWidget(left_panel, 7)
         main_layout.addWidget(right_panel, 3)
     
@@ -35,3 +40,30 @@ class SafeShieldCV(QWidget):
         center_screen = self.screen().availableGeometry().center()
         qrect.moveCenter(center_screen)
         self.move(qrect.topLeft())
+    
+    def handle_violation_update(self, missing_items, filename):
+        """Update right panel with violation info"""
+        right_panel = self.findChild(SSCV_RightMainContainer)
+        if right_panel:
+            right_panel.top_container.update_violations(missing_items)
+            # display image in middel panel if available
+            if filename and os.path.exists(filename):
+                # add image to list
+                # right_panel.mid_container.display_image(filename)
+                from PyQt6.QtWidgets import QListWidgetItem
+                from PyQt6.QtCore import Qt
+
+                mid = right_panel.mid_container
+
+                if filename not in mid.images:
+                    mid.images.append(filename)
+
+                    item = QListWidgetItem(os.path.basename(filename))
+                    item.setData(Qt.ItemDataRole.UserRole, filename)
+                    mid.image_list.addItem(item)
+
+                mid.display_image(filename)
+    
+    def handle_report_generated(self, report_data):
+        # handle report generated
+        print(f"Report generated:{report_data['subject']}")

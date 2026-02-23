@@ -107,12 +107,12 @@ class SSCV_YOLOONNXDetector:
         # run inference
         outputs = self.session.run([self.output_name], {self.input_name: input_image})
         preds = outputs[0]
-        print(
-            "[DEBUG] ONNX output:",
-            preds.shape,
-            "min:", preds.min(),
-            "max:", preds.max()
-        )
+        # print(
+        #     "[DEBUG] ONNX output:",
+        #     preds.shape,
+        #     "min:", preds.min(),
+        #     "max:", preds.max()
+        # )
         # postprocess
         detections = self.postprocess(outputs, original_shape)
         return detections
@@ -120,6 +120,8 @@ class SSCV_YOLOONNXDetector:
 
 class WebcamProcessing(QWidget):
     """Widget class for displaying webcam feed with YOLO detection"""
+    violation_detected_sgn = pyqtSignal(list, str)
+    # ppe_status_sgn = pyqtSignal(list)
 
     def __init__(self, model_path=None, conf_threshold=0.45):
         super().__init__()
@@ -132,6 +134,23 @@ class WebcamProcessing(QWidget):
 
         self.classes = ["helmet", "gloves", "vest", "boots", "goggles"]
         self.colors = [(255, 0, 0), (0, 255, 0), (0, 165, 255), (128, 128, 0), (235, 156, 48)]
+        # violation logic
+        self.required_ppe = {"helmet", "gloves", "vest"}
+        # take the first screenshot after 15 sec when app starts
+        self.app_start_time = datetime.now()
+        self.warmup_duration = 15
+        self.violation_start_time = None
+        self.violation_saved_time = None
+        # wait 10 sec before saving evidence
+        self.missing_duration_required = 10
+        # if ppe detected after 5 sec, cancel saving
+        self.grace_period_after_save = 5
+        self.violation_active = False
+        # project root dir
+        project_root = Path(__file__).resolve().parents[3]
+        self.evidence_dir = project_root / "daily_violations" / datetime.now().strftime("%Y-%m-%d")
+        self.evidence_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[DEBUG] Evidence will be saved to: {self.evidence_dir.absolute()}")
         # init detector only if model_path is provided
         self.detector = None
         if model_path and Path(model_path).exists():
@@ -215,7 +234,14 @@ class WebcamProcessing(QWidget):
             return frame
         
         # measure time
-        start_t = datetime.now()
+        now = datetime.now()
+        # warm up period
+        if (now - self.app_start_time).seconds < self.warmup_duration:
+            cv2.putText(
+                frame, "Warming up system...", (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2
+            )
+            return frame
         #  run detection
         detections = self.detector.detect(frame)
         current_time = datetime.now()
@@ -223,8 +249,16 @@ class WebcamProcessing(QWidget):
         # draw detections
         for detection in detections:
             x1, y1, x2, y2 = detection["bbox"]
-            color = self.colors[detection["class_id"] % len(self.colors)]
-            label = f"{self.classes[detection['class_id']]}: {detection['confidence']:.2f}"
+            class_id = detection["class_id"]
+            
+            if class_id >= len(self.classes):
+                continue
+            class_name = self.classes[class_id]
+            if class_name in self.required_ppe:
+                detected_items.add(class_name)
+            
+            color = self.colors[class_id % len(self.colors)]
+            label = f"{class_name}: {detection['confidence']:.2f}"
             # draw bbox
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             # draw label
@@ -242,6 +276,43 @@ class WebcamProcessing(QWidget):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                 (255, 255, 255), 2, cv2.LINE_AA
             )
+        # check missing ppe
+        missing_items = self.required_ppe - detected_items
+        # send missing ppe to ui for real-time display
+        # self.ppe_status_sgn.emit([f"Missing {item}" for item in missing_items])
+        if missing_items:
+            # emit signal immediately for real time ui update
+            self.violation_detected_sgn.emit(list(missing_items), None)
+            # start violation timer
+            if self.violation_start_time is None:
+                self.violation_start_time = now
+            
+            elapsed_missing = (now - self.violation_start_time).seconds
+            cv2.putText(
+                frame, f"Missing: {', '.join(missing_items)} ({elapsed_missing})",
+                (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                (0, 0, 255), 2
+            )
+            # save evidence if persistent
+            if (elapsed_missing >= self.missing_duration_required and not self.violation_active):
+                self.save_violation_evidence(frame, missing_items)
+                self.violation_active = True
+                self.violation_saved_time = now
+        else:
+            # ppe detected again
+            # check grace period if violation was active
+            if self.violation_active:
+                elapsed_since_save = (now - self.violation_saved_time).seconds
+                if elapsed_since_save <= self.grace_period_after_save:
+                    print("[INFO] PPE detected during grace period. Clearing violations.")
+                else:
+                    print("[INFO] Violation cycle completed")
+                # reset everything
+                self.violation_active = False
+                self.violation_saved_time = None
+            # reset timers
+            self.violation_start_time = None
+        
         # estimate actual fps
         end_t = datetime.now()
         fps = 1 / (end_t - self.prev_time).total_seconds()
@@ -267,6 +338,17 @@ class WebcamProcessing(QWidget):
             self.video_label.clear()
             print("Webcam stopped")
 
-    
-
-    
+    def save_violation_evidence(self, frame, missing_items):
+        timestamp = datetime.now().strftime("%H%M%S")
+        filename = self.evidence_dir / f"missing_{'_'.join(missing_items)}_{timestamp}.jpg"
+        
+        import cv2
+        # use abs path
+        abs_path = str(filename.absolute())
+        success = cv2.imwrite(abs_path, frame)
+        if success:
+            print(f"[ALERT] Violation successfully saved at: {abs_path}")
+            # emit signal
+            self.violation_detected_sgn.emit(list(missing_items), str(abs_path))
+        else:
+            print(f"[ERROR] Failed to save image to: {abs_path}")
