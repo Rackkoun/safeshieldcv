@@ -1,4 +1,4 @@
-# file frontend/sscv-desktop-app/models/sscv_report_generator.py
+# file frontend/sscv-desktop-app/services/sscv_report_generator.py
 # @author: Rackkoun
 # goal of this file is to fetch text from ollama and mail it
 
@@ -11,7 +11,7 @@ import base64
 
 logger = logging.getLogger(__name__)
 
-class SSCVReportGenerator:
+class SSCVReportGeneratorService:
     """Backend API client for report generation and email sending"""
     
     def __init__(self, backend_api_url: str):
@@ -157,9 +157,6 @@ class SSCVReportGenerator:
         """Check backend health"""
         try:
             logger.warning(f"BASE URL BEFORE: {self.backend_api_url}")
-            # Simple approach: just remove /api from the end and add /health
-            # health_url = self.backend_api_url.replace('/api', '') + '/health'
-            # logger.warning(f"BASE CHECK URL AFTER (1): {health_url}")
             base_url = self.backend_api_url.split('/api')[0] if '/api' in self.backend_api_url else self.backend_api_url
             logger.warning(f"[BASE CHECK URL AFTER] (0): {base_url}")
             health_url = f"{base_url}/health"

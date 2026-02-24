@@ -34,6 +34,42 @@ class SafeShieldCV(QWidget):
         self.setWindowTitle("SSCV")
         self.setGeometry(100, 100, 1280, 720)
         self.center()
+        self.setStyleSheet("""
+
+            QWidget {
+                background-color: #2B2B2B;
+                color: white;
+            }
+
+            QPushButton {
+                background-color: #EDB304;
+                color: black;
+                border-radius: 4px;
+                padding: 6px;
+                font-weight: bold;
+            }
+
+            QPushButton:hover {
+                background-color: #FBBC04;
+            }
+
+            QTableWidget {
+                background-color: #111111;
+                gridline-color: #333333;
+            }
+
+            QHeaderView::section {
+                background-color: #EDB304;
+                color: #2B2B2B;
+                font-weight: bold;
+            }
+
+            QTableWidget::item:selected {
+                background-color: #FBBC04;
+                color: #2B2B2B;
+            }
+
+        """)
     
     def center(self):
         qrect = self.frameGeometry()

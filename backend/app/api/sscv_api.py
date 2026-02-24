@@ -5,7 +5,7 @@ from pathlib import Path
 import base64
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
+from sqlalchemy import text, func
 from sqlalchemy.orm import Session
 # import uuid
 from datetime import datetime
@@ -348,105 +348,16 @@ async def send_incident_email_endpoint(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send email: {str(e)}"
         )
-
-# api stats
-@app.get("/sscv/api/stats/daily")
-async def get_daily_statistics_endpoint(
-    date: str = None, 
-    db: Session = Depends(get_db)
-):
-    """Get daily statistics"""
-    target_date = datetime.now().date()
-    if date:
-        try:
-            target_date = datetime.strptime(date, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid date format. Use YYYY-MM-DD"
-            )
-    # else:
-    #     target_date = datetime.now().date()
-    
-    # Get incidents for the date
-    incidents = db.query(Incident)\
-        .filter(Incident.reported_date == target_date)\
+@app.get("/sscv/api/stats/daily-range")
+async def get_daily_range_statistics(db: Session =Depends(get_db)):
+    """Return incident count grouped by date"""
+    results = (
+        db.query(Incident.reported_date, func.count(Incident.id))\
+        .group_by(Incident.reported_date)\
+        .order_by(Incident.reported_date)\
         .all()
-    
-    # Calculate statistics
-    total_incidents = len(incidents)
-    emails_sent = sum(1 for i in incidents if i.email_sent)
-    
-    # Count missing items
-    item_counts = {}
-    for incident in incidents:
-        for item in incident.missing_items:
-            item_counts[item] = item_counts.get(item, 0) + 1
-    
-    # Group by location
-    location_counts = {}
-    for incident in incidents:
-        location_counts[incident.location] = location_counts.get(incident.location, 0) + 1
-    
-    return {
-        "date": target_date.isoformat(),
-        "total_incidents": total_incidents,
-        "emails_sent": emails_sent,
-        "missing_items": item_counts,
-        "locations": location_counts
-    }
-
-@app.post("/sscv/api/debug/test-email")
-async def debug_test_email_endpoint():
-    """Debug endpoint to test email sending"""
-    try:
-        success, message = email_service.send_incident_email(
-            recipients=["ruphusleforestier@gmail.com"],
-            subject="Test Email from SSCV Backend",
-            body="This is a test email to verify the email service is working.",
-            incident_id="TEST-001"
-        )
-        
-        return {
-            "success": success,
-            "message": message,
-            "sender": email_service.sender_email,
-            "smtp_server": f"{email_service.smtp_server}:{email_service.smtp_port}"
-        }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"Error: {str(e)}",
-            "sender": email_service.sender_email
-        }
-
-@app.get("/sscv/api/debug/config")
-async def debug_config_endpoint():
-    """Debug endpoint to show current configuration"""
-    from app.configs.config import settings
-    
-    # Don't show passwords in response
-    config_info = {
-        "database": {
-            "user": settings.DB_USER,
-            "host": settings.DB_HOST,
-            "port": settings.DB_PORT,
-            "name": settings.DB_NAME
-        },
-        "email": {
-            "sender": settings.EMAIL_SENDER,
-            "smtp_server": settings.EMAIL_SMTP_SERVER,
-            "smtp_port": settings.EMAIL_SMTP_PORT,
-            "password_set": bool(settings.EMAIL_PASSWORD)
-        },
-        "ollama": {
-            "base_url": settings.OLLAMA_BASE_URL,
-            "model": settings.OLLAMA_MODEL
-        },
-        "evidence": {
-            "base_dir": str(settings.EVIDENCE_BASE_DIR)
-        }
-    }
-    
-    return config_info
+    )
+    return [{
+        "date": res[0].isoformat(),
+        "count": res[1]
+    } for res in results]

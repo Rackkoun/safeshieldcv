@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
 from PyQt6.QtGui import QFont, QPixmap
 from widgets.color_widget import SSCVColor
-from models.sscv_report_generator import SSCVReportGenerator
+from services.sscv_report_generator_service import SSCVReportGeneratorService
 # import frontend config
 from configs.sscv_config import get_config
 
@@ -208,7 +208,7 @@ class SSCV_RightMidContainer(QWidget):
         """Display image in the preview area"""
         if filename and filename not in self.images:
             self.add_image(filename)
-            
+
         pixmap = QPixmap(filename)
         if not pixmap.isNull():
             scaled = pixmap.scaled(
@@ -404,7 +404,7 @@ class SSCV_RightBotContainer(QWidget):
         """Initialize backend API client"""
         try:
             print(f"[SSCV INIT GENERATOR] (URL): config api url: {self.config.api_url}")
-            self.generator = SSCVReportGenerator(self.config.api_url)
+            self.generator = SSCVReportGeneratorService(self.config.api_url)
             # Test connection
             health = self.generator.health_check()
             print(f"[SSCV-RightBotUI - Healt]: health status - <({health})>")

@@ -45,7 +45,10 @@ class SSCVConfig:
     @property
     def evidence_dir(self) -> str:
         return self.config["detection"]["evidence_dir"]
-    
+    # extra features for charts and tables
+    # @property
+    # def get_incidents(self):
+    #     results = self.config["backend"][]
 # singleton instance
 _config_instance = None
 
