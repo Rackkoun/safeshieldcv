@@ -27,10 +27,6 @@ class SSCVEmailService:
         logger.info(f"Email service initialized for: {self.sender_email}")
         logger.info(f"SMTP Server: {self.smtp_server}:{self.smtp_port}")
         logger.info(f"Evidence base dir: {self.evidence_base_dir}")
-        # if self.sender_email:
-        #     logger.info(f"Email service initialized for: {self.sender_email}")
-        # else:
-        #     logger.warning("Email service: No sender configured")
     
     def send_incident_email(
         self,
@@ -38,12 +34,19 @@ class SSCVEmailService:
         subject: str,
         body: str,
         evidence_images: List[str] = None,
-        incident_id: str = None
+        incident_id: str = None,
+        incident_date: str = None   # new parameter
     ) -> Tuple[bool, str]:
         """
         Send email with incident report
         
-        Returns: (success: bool, message: str)
+        Args:
+            recipients: List of email addresses
+            subject: Email subject
+            body: Plain text body
+            evidence_images: List of image filenames
+            incident_id: Optional incident reference (for logging)
+            incident_date: Optional incident date in YYYY-MM-DD format
         """
         # Validate configuration
         if not self.sender_email or not self.sender_password:
@@ -56,25 +59,18 @@ class SSCVEmailService:
             logger.error(error_msg)
             return False, error_msg
         
-        # Build log prefix with incident_id if available
         log_prefix = f"[{incident_id}] " if incident_id else "[EMAIL] "
-        
         logger.info(f"{log_prefix}Preparing email to: {recipients}")
         
         try:
-            # Create email message
             msg = MIMEMultipart()
             msg['From'] = self.sender_email
             msg['To'] = ", ".join(recipients)
             msg['Subject'] = subject
             
-            logger.debug(f"{log_prefix}Subject: {subject}")
-            
-            # Add reference to incident in body if provided
             if incident_id:
                 body = f"Incident Reference: {incident_id}\n\n{body}"
             
-            # Add body text
             msg.attach(MIMEText(body, 'plain'))
             
             # Attach evidence images
@@ -83,114 +79,80 @@ class SSCVEmailService:
                 logger.info(f"{log_prefix}Looking for {len(evidence_images)} evidence images")
                 for image_ref in evidence_images:
                     try:
-                        # Clean the image reference
-                        if isinstance(image_ref, str):
-                            image_name = Path(image_ref).name
-                        else:
-                            image_name = str(image_ref)
-                        
-                        # Try to find the image file
-                        image_path = self._find_image_path(image_name)
+                        image_name = Path(image_ref).name
+                        image_path = self._find_image_path(image_name, incident_date=incident_date)
                         if image_path and image_path.exists():
                             logger.info(f"{log_prefix}Found image at: {image_path}")
                             with open(image_path, "rb") as f:
                                 img_data = f.read()
                                 img = MIMEImage(img_data)
-                                img.add_header(
-                                    'Content-Disposition', 
-                                    'attachment', 
-                                    filename=image_path.name
-                                )
+                                img.add_header('Content-Disposition', 'attachment', filename=image_path.name)
                                 msg.attach(img)
                             attached_count += 1
                             logger.info(f"{log_prefix}Attached image: {image_path.name}")
                         else:
                             logger.warning(f"{log_prefix}Image not found: {image_name}")
-                            logger.warning(f"{log_prefix}Searched paths: {self._get_search_paths(image_name)}")
                     except Exception as e:
                         logger.error(f"{log_prefix}Failed to attach image {image_ref}: {e}")
             
             # Send email
             logger.info(f"{log_prefix}Connecting to SMTP server: {self.smtp_server}:{self.smtp_port}")
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30)
+            server.starttls()
+            server.login(self.sender_email, self.sender_password)
+            server.send_message(msg)
+            server.quit()
             
-            try:
-                server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30)
-                server.starttls()
-                logger.info(f"{log_prefix}Starting TLS connection...")
-                server.login(self.sender_email, self.sender_password)
-                logger.info(f"{log_prefix}Logged in successfully")
-                
-                server.send_message(msg)
-                server.quit()
-                
-                message = f"Email sent to {len(recipients)} recipient(s)"
-                if attached_count > 0:
-                    message += f" with {attached_count} attachment(s)"
-                
-                logger.info(f"✅ {log_prefix}{message}")
-                return True, message
-                
-            except smtplib.SMTPAuthenticationError as e:
-                error_msg = f"SMTP authentication failed: {str(e)}. Check email credentials."
-                logger.error(f"❌ {log_prefix}{error_msg}")
-                return False, error_msg
-            except smtplib.SMTPException as e:
-                error_msg = f"SMTP error: {str(e)}"
-                logger.error(f"❌ {log_prefix}{error_msg}")
-                return False, error_msg
-            except Exception as e:
-                error_msg = f"SMTP connection error: {str(e)}"
-                logger.error(f"❌ {log_prefix}{error_msg}")
-                return False, error_msg
+            message = f"Email sent to {len(recipients)} recipient(s)"
+            if attached_count > 0:
+                message += f" with {attached_count} attachment(s)"
+            
+            logger.info(f"✅ {log_prefix}{message}")
+            return True, message
             
         except Exception as e:
             error_msg = f"Failed to prepare or send email: {str(e)}"
             logger.error(f"❌ {log_prefix}{error_msg}")
             return False, error_msg
     
-    def _find_image_path(self, image_ref: str) -> Optional[Path]:
-        """Find image file by reference (filename)"""
-        image_name = Path(image_ref).name
-        
-        # Try multiple possible locations
-        search_paths = self._get_search_paths(image_name)
-        
+    def _find_image_path(self, image_name: str, incident_date: str = None) -> Optional[Path]:
+        """Find image file by name, optionally using incident date"""
+        search_paths = self._get_search_paths(image_name, incident_date=incident_date)
         for path in search_paths:
             if path.exists():
                 logger.debug(f"Found image at: {path}")
                 return path
-        
-        logger.warning(f"Image not found in any location: {image_name}")
+        logger.warning(f"Image not found: {image_name}")
         return None
     
-    def _get_search_paths(self, image_name: str) -> List[Path]:
+    def _get_search_paths(self, image_name: str, incident_date: str = None) -> List[Path]:
         """Get all possible search paths for an image"""
         current_date = datetime.now().strftime("%Y-%m-%d")
-        return [
-            # Direct path
+        paths = [
+            # Direct filename
             Path(image_name),
-            # Daily violations directory
+            # Current date folder
             self.evidence_base_dir / "daily_violations" / current_date / image_name,
             # Daily violations root
             self.evidence_base_dir / "daily_violations" / image_name,
-            # Evidence base dir directly
+            # Evidence base dir
             self.evidence_base_dir / image_name,
             # Current working directory
             Path.cwd() / image_name,
-            # Try without date subdirectory
-            self.evidence_base_dir / "daily_violations" / image_name,
-            # Try parent directory
+            # Parent directory
             self.evidence_base_dir.parent / image_name,
         ]
+        # If incident date is provided and different from current date, add that path early
+        if incident_date and incident_date != current_date:
+            paths.insert(1, self.evidence_base_dir / "daily_violations" / incident_date / image_name)
+        return paths
     
     def test_connection(self) -> bool:
         """Test email connection"""
         if not self.sender_email or not self.sender_password:
             logger.warning("Email test: No sender or password configured")
             return False
-        
         try:
-            logger.info(f"Testing email connection to {self.smtp_server}:{self.smtp_port}")
             server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10)
             server.starttls()
             server.login(self.sender_email, self.sender_password)
@@ -198,9 +160,6 @@ class SSCVEmailService:
             server.quit()
             logger.info("✅ Email connection test successful")
             return True
-        except smtplib.SMTPAuthenticationError as e:
-            logger.error(f"❌ Email authentication failed: {e}")
-            return False
         except Exception as e:
             logger.error(f"❌ Email connection test failed: {e}")
             return False

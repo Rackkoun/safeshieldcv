@@ -2,8 +2,10 @@
 # src 1: https://www.tutorialspoint.com/pyqt/pyqt_major_classes.htm
 # src 2: https://www.pythontutorial.net/pyqt/
 import os
+from pathlib import Path
 from PyQt6.QtWidgets import QWidget, QHBoxLayout
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QIcon
 
 from containers.left_panel_container import SSCV_LeftMainContainer
 from containers.right_panel_container import SSCV_RightMainContainer
@@ -32,6 +34,9 @@ class SafeShieldCV(QWidget):
         """Basic app widgets"""
         # set window title
         self.setWindowTitle("SSCV")
+        logo_path = Path(__file__).resolve().parents[1] / "logo" / "sscv_logo.png"
+        if logo_path.exists():
+            self.setWindowIcon(QIcon(str(logo_path)))
         self.setGeometry(100, 100, 1280, 720)
         self.center()
         self.setStyleSheet("""
@@ -52,7 +57,12 @@ class SafeShieldCV(QWidget):
             QPushButton:hover {
                 background-color: #FBBC04;
             }
+            QPushButton:disabled {
 
+                background-color: #7F8C8D;
+                color: #2B2B2B;
+
+            }
             QTableWidget {
                 background-color: #111111;
                 gridline-color: #333333;
@@ -100,6 +110,6 @@ class SafeShieldCV(QWidget):
 
                 mid.display_image(filename)
     
-    def handle_report_generated(self, report_data):
-        # handle report generated
-        print(f"Report generated:{report_data['subject']}")
+    # def handle_report_generated(self, report_data):
+    #     # handle report generated
+    #     print(f"Report generated:{report_data['subject']}")

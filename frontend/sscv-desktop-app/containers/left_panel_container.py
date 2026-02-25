@@ -39,7 +39,7 @@ class SSCV_VideoProcessingContainer(SSCVColor):
         self.setContentsMargins(0, 0, 0, 0)
         # path to model
         model_path = Path(__file__).resolve().parents[1] / "models" / "sscv_yolo26n_v2.onnx"
-        print(f"[SSCV_VID_PROC] model_path: {model_path}")
+        # print(f"[SSCV_VID_PROC] model_path: {model_path}")
         # init webcam
         conf_threshold = 0.25
         self.webcam_processing = WebcamProcessing(str(model_path), conf_threshold=conf_threshold)
@@ -63,7 +63,7 @@ class SSCV_VideoProcessingContainer(SSCVColor):
         """handle violation detection and update ui"""
         # add no + missing ppe equipment to display in the ui
         violations_display = [f"Missing {item}" for item in missing_items]
-        print(f"[DEBUG] Violation detected in container: {violations_display}, file: {filename}")
+        # print(f"[DEBUG] Violation detected in container: {violations_display}, file: {filename}")
         # emit signal to main window to update right panel
         self.violation_detected_sgn.emit(violations_display, filename)
 

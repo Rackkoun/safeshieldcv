@@ -286,68 +286,52 @@ async def generate_ppe_report_endpoint(
 async def send_incident_email_endpoint(
     incident_id: int,
     email_request: EmailSendRequest,
-    # background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    """Send email for an incident (background task)"""
-    try:
-        # Get incident from database
-        incident = db.query(Incident).filter(Incident.id == incident_id).first()
-        if not incident:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Incident {incident_id} not found"
-            )
-        
-        # Create subject
-        clean_items = [item.replace('no_', '') for item in incident.missing_items]
-        subject = f"PPE Violation: {', '.join(clean_items)} at {incident.location}"
-        
-        # Send email SYNCHRONOUSLY (not background task)
-        success, message = email_service.send_incident_email(
-            recipients=email_request.recipients,
-            subject=subject,
-            body=incident.report_text or "No report text available",
-            evidence_images=incident.evidence_images,
-            incident_id=f"INC-{incident.id:06d}"  # Now used in logging
-        )
-        
-        # Update database immediately
-        if success:
-            incident.email_sent = True
-            incident.email_sent_at = datetime.now()
-            incident.email_recipients = email_request.recipients
-            db.commit()
-            db.refresh(incident)
-            
-            logger.info(f"✅ Email sent and DB updated for incident {incident_id}")
-            
-            return {
-                "success": True,
-                "message": message,
-                "incident_id": incident.id,
-                "incident_ref": f"INC-{incident.id:06d}",
-                "email_sent": True,
-                "sent_at": incident.email_sent_at.isoformat()
-            }
-        else:
-            # Email failed but we return the error
-            return {
-                "success": False,
-                "message": message,
-                "incident_id": incident.id,
-                "incident_ref": f"INC-{incident.id:06d}",
-                "email_sent": False,
-                "sent_at": None
-            }
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to send email: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send email: {str(e)}"
-        )
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    
+    # Create subject
+    clean_items = [item.replace('no_', '') for item in incident.missing_items]
+    subject = f"PPE Violation: {', '.join(clean_items)} at {incident.location}"
+    
+    # Convert incident.reported_date to YYYY-MM-DD string
+    incident_date_str = incident.reported_date.isoformat() if incident.reported_date else None
+    
+    success, message = email_service.send_incident_email(
+        recipients=email_request.recipients,
+        subject=subject,
+        body=incident.report_text or "No report text available",
+        evidence_images=incident.evidence_images,
+        incident_id=f"INC-{incident.id:06d}",
+        incident_date=incident_date_str   # pass the date
+    )
+    
+    # Update database if success
+    if success:
+        incident.email_sent = True
+        incident.email_sent_at = datetime.now()
+        incident.email_recipients = email_request.recipients
+        db.commit()
+        return {
+            "success": True,
+            "message": message,
+            "incident_id": incident.id,
+            "incident_ref": f"INC-{incident.id:06d}",
+            "email_sent": True,
+            "sent_at": incident.email_sent_at.isoformat()
+        }
+    else:
+        return {
+            "success": False,
+            "message": message,
+            "incident_id": incident.id,
+            "incident_ref": f"INC-{incident.id:06d}",
+            "email_sent": False,
+            "sent_at": None
+        }
+
 @app.get("/sscv/api/stats/daily-range")
 async def get_daily_range_statistics(db: Session =Depends(get_db)):
     """Return incident count grouped by date"""

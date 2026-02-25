@@ -36,7 +36,7 @@ class SSCVGenerateThread(QThread):
                 location=self.location
             )
             self.progress_signal_update.emit("Report generated", 100)
-            print(f"[GENERATOR_THREAD](results): {result}")
+            # print(f"[GENERATOR_THREAD](results): {result}")
             self.report_signal_ready.emit(result)
         except Exception as e:
             error_result = {
@@ -78,8 +78,27 @@ class SSCV_RightTopContainer(QWidget):
     def __init__(self):
         # https://emojipedia.org/
         super().__init__()
+
         self.current_violations = []
         layout = QVBoxLayout()
+        # app logo
+        self.logo_label = QLabel()
+        logo_path = Path(__file__).resolve().parents[1] / "logo" / "sscv_logo.png"
+        if logo_path.exists():
+            # print(f"[DEBUG LOGO] file exist: {logo_path}")
+            pixmap = QPixmap(str(logo_path))
+            self.logo_label.setPixmap(
+                pixmap.scaled(
+                    220, 150,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+            )
+            self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(self.logo_label)
+            
+        # else:
+            # print(f"[DEBUG LOGO] file not found: at {logo_path}")
         # set policy
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
@@ -92,9 +111,25 @@ class SSCV_RightTopContainer(QWidget):
         layout.addWidget(self.summary_label)
         # current violations list
         self.violations_list = QLabel("")
-        self.violations_list.setStyleSheet("color: #7f8c8d;")
+        # self.violations_list.setStyleSheet("color: #7f8c8d;")
+        self.violations_list.setStyleSheet("""
+        color: #ECF0F1;
+        font-size: 13px;
+        padding-left: 5px;
+        """)
         layout.addWidget(self.violations_list)
         self.setLayout(layout)
+    
+    # def setup_app_logo(self):
+    #     logo_path = Path(__file__).resolve().parents[1] / "logo" / "sscv_logo.png"
+    #     pixmap = QPixmap(str(logo_path))
+    #     self.logo_label.setPixmap(
+    #         pixmap.scaled(
+    #             220, 150,
+    #             Qt.AspectRatioMode.KeepAspectRatio,
+    #             Qt.TransformationMode.SmoothTransformation
+    #         )
+    #     )
     
     def update_violations(self, violations):
         # update current violations
@@ -102,7 +137,7 @@ class SSCV_RightTopContainer(QWidget):
         if violations:
             self.summary_label.setText(f"🔴 Active Violations: {len(violations)}")
             self.summary_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #e74c3c;")
-            print(f"[TOPRIGHT_PANEL - DEBUG](missing items SANITY): {violations}")
+            # print(f"[TOPRIGHT_PANEL - DEBUG](missing items SANITY): {violations}")
             self.violations_list.setText("\n".join([f"• {v}" for v in violations]))
         else:
             self.summary_label.setText(f"🟢 No Violations Detected")
@@ -125,10 +160,28 @@ class SSCV_RightMidContainer(QWidget):
        layout = QVBoxLayout()
        # add title
        title = QLabel("Evidence Images")
-       title.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;")
+       title.setStyleSheet("font-size: 16px; font-weight: bold; color: #FFFFFF;")
        layout.addWidget(title)
        # image list with scroll
        self.image_list = QListWidget()
+       self.image_list.setStyleSheet("""
+
+        QListWidget {
+            background-color: #ECF0F1;
+            color: black;
+            border-radius: 4px;
+        }
+
+        QListWidget::item {
+            padding: 6px;
+        }
+
+        QListWidget::item:selected {
+            background-color: #FBBC04;
+            color: black;
+        }
+
+        """)
        self.image_list.itemClicked.connect(self.on_image_selected)
        layout.addWidget(self.image_list, 2)
        
@@ -388,13 +441,13 @@ class SSCV_RightBotContainer(QWidget):
         self.test_btn.clicked.connect(self.test_connection)
         self.test_btn.setStyleSheet("""
             QPushButton {
-                background-color: #9b59b6;
+                background-color: #27ae60;
                 color: white;
                 padding: 8px;
                 border-radius: 4px;
                 font-weight: bold;
             }
-            QPushButton:hover { background-color: #8e44ad; }
+            QPushButton:hover { background-color: #07e664; }
         """)
         button_layout.addWidget(self.test_btn)
         layout.addLayout(button_layout)
@@ -403,11 +456,11 @@ class SSCV_RightBotContainer(QWidget):
     def init_generator(self):
         """Initialize backend API client"""
         try:
-            print(f"[SSCV INIT GENERATOR] (URL): config api url: {self.config.api_url}")
+            # print(f"[SSCV INIT GENERATOR] (URL): config api url: {self.config.api_url}")
             self.generator = SSCVReportGeneratorService(self.config.api_url)
             # Test connection
             health = self.generator.health_check()
-            print(f"[SSCV-RightBotUI - Healt]: health status - <({health})>")
+            # print(f"[SSCV-RightBotUI - Healt]: health status - <({health})>")
             if health.get("backend", False):
                 if health.get("status") == "healthy":
                     self.status_label.setText("✅ Backend connected")
@@ -476,8 +529,8 @@ class SSCV_RightBotContainer(QWidget):
             else:
                 missing_items = getattr(top_container, "current_violations", [])
         # Debug: print what we're sending
-        print(f"[DEBUG] Missing items from UI: {missing_items}")
-        print(f"[DEBUG] Image paths: {image_paths}")
+        # print(f"[DEBUG] Missing items from UI: {missing_items}")
+        # print(f"[DEBUG] Image paths: {image_paths}")
         # Fallback if no violations
         # if not missing_items:
         #     missing_items = ['no_helmet', 'no_gloves']
@@ -488,7 +541,7 @@ class SSCV_RightBotContainer(QWidget):
             for item in missing_items
             if isinstance(item, str)
         ]
-        print(f"[DEBUG] Missing items before sending to backend: {missing_items}")
+        # print(f"[DEBUG] Missing items before sending to backend: {missing_items}")
         
         # Get location
         location = self.location_input.text().strip() or self.config.default_location
@@ -528,7 +581,7 @@ class SSCV_RightBotContainer(QWidget):
                 # Convert detected items to proper format
                 violations = [item for item in detected_items if item]
                 top_container.update_violations(violations)
-                print(f"[DEBUG] Updated violations: {violations}")
+                # print(f"[DEBUG] Updated violations: {violations}")
 
     @pyqtSlot(dict)
     def on_report_ready(self, report_data):
@@ -570,7 +623,7 @@ class SSCV_RightBotContainer(QWidget):
         """Update progress display."""
         self.progress_bar.setValue(percent)
         self.status_label.setText(message)
-        print(f"[UI DEBUG] Progress: {message} ({percent}%)")
+        # print(f"[UI DEBUG] Progress: {message} ({percent}%)")
     
     @pyqtSlot()
     def on_worker_finished(self):
@@ -579,7 +632,7 @@ class SSCV_RightBotContainer(QWidget):
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.worker_thread = None
-        print("[UI DEBUG] Worker thread finished")
+        # print("[UI DEBUG] Worker thread finished")
     
     def send_report(self):
         """Send the generated report"""
