@@ -15,11 +15,11 @@ class SSCVIncidentReportChart(QWebEngineView):
             data=[go.Bar(x=[], y=[], marker_color='#FBBC04')],
             layout=go.Layout(
                 title="Daily Incidents",
-                xaxis=dict(title="Date", type='date', tickformat='%Y-%m-%d'),
+                xaxis=dict(title="Date", type='category'),
                 yaxis=dict(title="Count"),
                 template="plotly_white",
                 margin=dict(l=20, r=20, t=40, b=20),
-                bargap=0.4,
+                bargap=0.2,
                 plot_bgcolor='#2b2b2b',
                 paper_bgcolor='#2b2b2b',
                 font=dict(color='white')

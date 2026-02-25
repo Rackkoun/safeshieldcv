@@ -181,10 +181,11 @@ class SSCV_LeftBottomContainer(QWidget):
         self.refresh_table(incidents)
     
     def refresh_table(self, incidents):
-        # incidents = self.stats_api_client.get_incidents()
-        self.table.setRowCount(len(incidents))
+        # show only the last 7 entries
+        display_incidents = incidents[:7]
+        self.table.setRowCount(len(display_incidents))
 
-        for row, incident in enumerate(incidents):
+        for row, incident in enumerate(display_incidents):
             incident_ref = f"INC-{incident['id']:06d}"
             missings = ", ".join(incident["missing_items"])
             date = incident["reported_date"]

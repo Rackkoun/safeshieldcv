@@ -134,13 +134,7 @@ class SSCVEmailService:
             # Current date folder
             self.evidence_base_dir / "daily_violations" / current_date / image_name,
             # Daily violations root
-            self.evidence_base_dir / "daily_violations" / image_name,
-            # Evidence base dir
-            self.evidence_base_dir / image_name,
-            # Current working directory
-            Path.cwd() / image_name,
-            # Parent directory
-            self.evidence_base_dir.parent / image_name,
+            self.evidence_base_dir / "daily_violations" / image_name
         ]
         # If incident date is provided and different from current date, add that path early
         if incident_date and incident_date != current_date:

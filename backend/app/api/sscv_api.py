@@ -5,7 +5,7 @@ from pathlib import Path
 import base64
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text, func
+from sqlalchemy import text, func, Date, cast
 from sqlalchemy.orm import Session
 # import uuid
 from datetime import datetime
@@ -215,8 +215,10 @@ async def generate_ppe_report_endpoint(
                     
                     image_bytes = base64.b64decode(image_data)
                     
+                    # daily violations dir
+                    current_date = datetime.now().strftime("%Y-%m-%d")
                     # Save to evidence directory
-                    evidence_dir = Path(settings.EVIDENCE_BASE_DIR) / "evidence_storage"
+                    evidence_dir = Path(settings.EVIDENCE_BASE_DIR) / "daily_violations" / current_date
                     evidence_dir.mkdir(parents=True, exist_ok=True)
                     
                     # Create filename with timestamp
@@ -247,7 +249,7 @@ async def generate_ppe_report_endpoint(
             violation_type="PPE Violation",
             missing_items=request.missing_items,
             location=request.location,
-            evidence_images=request.image_ref,  # Store original references
+            evidence_images=saved_image_paths,# request.image_ref,  # Store original references
             reported_date=now.date(),
             reported_time=now.time(),
             report_text=report_text,
@@ -336,12 +338,12 @@ async def send_incident_email_endpoint(
 async def get_daily_range_statistics(db: Session =Depends(get_db)):
     """Return incident count grouped by date"""
     results = (
-        db.query(Incident.reported_date, func.count(Incident.id))\
-        .group_by(Incident.reported_date)\
-        .order_by(Incident.reported_date)\
+        db.query(
+            cast(Incident.reported_date, Date).label("date"),
+            func.count(Incident.id).label("count")
+            )\
+        .group_by(cast(Incident.reported_date, Date))\
+        .order_by("date")\
         .all()
     )
-    return [{
-        "date": res[0].isoformat(),
-        "count": res[1]
-    } for res in results]
+    return [{"date": str(r.date), "count": r.count} for r in results]
