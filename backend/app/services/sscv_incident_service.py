@@ -59,7 +59,6 @@ def mark_email_sent(db: Session, incident_id: int, recipients: List[str]) -> Opt
 
 def get_daily_stats(db: Session, date: datetime.date = None) -> dict:
     """Get statistics for a specific day"""
-    from sqlalchemy import func
     
     if not date:
         date = datetime.now().date()

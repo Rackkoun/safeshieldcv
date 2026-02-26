@@ -1,4 +1,4 @@
-# file database.py
+# file safeshieldcv/backend/app/database.py
 
 import os
 from pathlib import Path
@@ -45,7 +45,3 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# if __name__=="__main__":
-#     print(f"Root path: {SSCV_ROOT_DIR}")
-#     print(f"db name: {DB_NAME}")

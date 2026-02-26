@@ -1,17 +1,13 @@
 # file backend/app/services/sscv_ollama_service.py
 import requests
 from typing import Optional
-import logging
 from app.configs.config import settings
-
-logger = logging.getLogger(__name__)
 
 class SSCVOllamaClientService:
     
     def __init__(self, base_url: str = settings.OLLAMA_BASE_URL):
         self.base_url = base_url
         self.api_url = f"{base_url}/api/generate"
-        logger.info(f"Ollama client initialized: {self.base_url}")
     
     def generate_ppe_report(
             self, date_time: str, missing_items: list, image_ref: Optional[list] = None,
@@ -35,10 +31,8 @@ class SSCVOllamaClientService:
             response.raise_for_status()
             result = response.json()
             report_text = result.get("response", "Report generation failed.").strip()
-            logger.info(f"[BACKEND::SSCV_OLLAMA_SERVICE](generate ppe report): Length: ({len(report_text)} chars)\nText:\n {report_text}")
             return report_text
         except requests.exceptions.RequestException as e:
-            logger.error(f"Ollama API error: {e}")
             # Fallback message
             return f"PPE Violation: {', '.join(missing_items)} " \
             f"at {date_time}. Immediate action required."

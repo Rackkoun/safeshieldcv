@@ -65,4 +65,3 @@ class ReportResponse(BaseModel):
 class EmailSendRequest(BaseModel):
     """Schema for email sending request"""
     recipients: List[EmailStr]
-    # sent: bool = True
