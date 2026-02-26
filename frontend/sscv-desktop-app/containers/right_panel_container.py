@@ -2,15 +2,14 @@
 
 import os
 from pathlib import Path
-from datetime import datetime
+# from datetime import datetime
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QListWidget,
     QLineEdit, QGroupBox, QFileDialog, QMessageBox, QProgressBar,
     QListWidgetItem, QPushButton, QSizePolicy
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
-from PyQt6.QtGui import QFont, QPixmap
-from widgets.color_widget import SSCVColor
+from PyQt6.QtGui import QPixmap
 from services.sscv_report_generator_service import SSCVReportGeneratorService
 # import frontend config
 from configs.sscv_config import get_config
@@ -36,7 +35,6 @@ class SSCVGenerateThread(QThread):
                 location=self.location
             )
             self.progress_signal_update.emit("Report generated", 100)
-            # print(f"[GENERATOR_THREAD](results): {result}")
             self.report_signal_ready.emit(result)
         except Exception as e:
             error_result = {
@@ -85,7 +83,6 @@ class SSCV_RightTopContainer(QWidget):
         self.logo_label = QLabel()
         logo_path = Path(__file__).resolve().parents[1] / "logo" / "sscv_logo.png"
         if logo_path.exists():
-            # print(f"[DEBUG LOGO] file exist: {logo_path}")
             pixmap = QPixmap(str(logo_path))
             self.logo_label.setPixmap(
                 pixmap.scaled(
@@ -96,9 +93,6 @@ class SSCV_RightTopContainer(QWidget):
             )
             self.logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(self.logo_label)
-            
-        # else:
-            # print(f"[DEBUG LOGO] file not found: at {logo_path}")
         # set policy
         self.setSizePolicy(
             QSizePolicy.Policy.Preferred,
@@ -111,7 +105,6 @@ class SSCV_RightTopContainer(QWidget):
         layout.addWidget(self.summary_label)
         # current violations list
         self.violations_list = QLabel("")
-        # self.violations_list.setStyleSheet("color: #7f8c8d;")
         self.violations_list.setStyleSheet("""
         color: #ECF0F1;
         font-size: 13px;
@@ -120,24 +113,12 @@ class SSCV_RightTopContainer(QWidget):
         layout.addWidget(self.violations_list)
         self.setLayout(layout)
     
-    # def setup_app_logo(self):
-    #     logo_path = Path(__file__).resolve().parents[1] / "logo" / "sscv_logo.png"
-    #     pixmap = QPixmap(str(logo_path))
-    #     self.logo_label.setPixmap(
-    #         pixmap.scaled(
-    #             220, 150,
-    #             Qt.AspectRatioMode.KeepAspectRatio,
-    #             Qt.TransformationMode.SmoothTransformation
-    #         )
-    #     )
-    
     def update_violations(self, violations):
         # update current violations
         self.current_violations = violations
         if violations:
             self.summary_label.setText(f"🔴 Active Violations: {len(violations)}")
             self.summary_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #e74c3c;")
-            # print(f"[TOPRIGHT_PANEL - DEBUG](missing items SANITY): {violations}")
             self.violations_list.setText("\n".join([f"• {v}" for v in violations]))
         else:
             self.summary_label.setText(f"🟢 No Violations Detected")
@@ -434,8 +415,6 @@ class SSCV_RightBotContainer(QWidget):
         # cancel btn
         self.cancel_btn = QPushButton("Cancel")
         button_layout.addWidget(self.cancel_btn)
-        # layout.addLayout(button_layout)
-        # self.setLayout(layout)
         # add a test btn to test the connection
         self.test_btn = QPushButton("🔧 Test Connection")
         self.test_btn.clicked.connect(self.test_connection)
@@ -456,11 +435,9 @@ class SSCV_RightBotContainer(QWidget):
     def init_generator(self):
         """Initialize backend API client"""
         try:
-            # print(f"[SSCV INIT GENERATOR] (URL): config api url: {self.config.api_url}")
             self.generator = SSCVReportGeneratorService(self.config.api_url)
             # Test connection
             health = self.generator.health_check()
-            # print(f"[SSCV-RightBotUI - Healt]: health status - <({health})>")
             if health.get("backend", False):
                 if health.get("status") == "healthy":
                     self.status_label.setText("✅ Backend connected")
@@ -504,8 +481,6 @@ class SSCV_RightBotContainer(QWidget):
 
     def generate_report(self):
         """Generate report from current violations"""
-        # Debug first
-        self.debug_report_flow()
         # Check if generator is initialized
         if not self.generator:
             QMessageBox.warning(self, "Error", 
@@ -528,20 +503,12 @@ class SSCV_RightBotContainer(QWidget):
                 missing_items = top_container.get_current_violations()
             else:
                 missing_items = getattr(top_container, "current_violations", [])
-        # Debug: print what we're sending
-        # print(f"[DEBUG] Missing items from UI: {missing_items}")
-        # print(f"[DEBUG] Image paths: {image_paths}")
-        # Fallback if no violations
-        # if not missing_items:
-        #     missing_items = ['no_helmet', 'no_gloves']
-        #     print(f"[DEBUG] Using fallback missing items: {missing_items}")
         # sanitize missing items
         missing_items = [
             item.replace("Missing ", "").strip()
             for item in missing_items
             if isinstance(item, str)
         ]
-        # print(f"[DEBUG] Missing items before sending to backend: {missing_items}")
         
         # Get location
         location = self.location_input.text().strip() or self.config.default_location
@@ -581,7 +548,6 @@ class SSCV_RightBotContainer(QWidget):
                 # Convert detected items to proper format
                 violations = [item for item in detected_items if item]
                 top_container.update_violations(violations)
-                # print(f"[DEBUG] Updated violations: {violations}")
 
     @pyqtSlot(dict)
     def on_report_ready(self, report_data):
@@ -623,7 +589,6 @@ class SSCV_RightBotContainer(QWidget):
         """Update progress display."""
         self.progress_bar.setValue(percent)
         self.status_label.setText(message)
-        # print(f"[UI DEBUG] Progress: {message} ({percent}%)")
     
     @pyqtSlot()
     def on_worker_finished(self):
@@ -632,7 +597,6 @@ class SSCV_RightBotContainer(QWidget):
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.worker_thread = None
-        # print("[UI DEBUG] Worker thread finished")
     
     def send_report(self):
         """Send the generated report"""
@@ -684,44 +648,6 @@ class SSCV_RightBotContainer(QWidget):
         self.body_preview.clear()
         self.send_btn.setEnabled(False)
         self.current_report = None
-    
-    def debug_signal_connections(self):
-        """Debug method to check signal connections"""
-        print("\n=== SIGNAL DEBUG ===")
-        print(f"1. Worker thread exists: {self.worker_thread is not None}")
-        
-        if self.worker_thread:
-            print(f"2. Thread signals:")
-            print(f"   - report_signal_ready: {hasattr(self.worker_thread, 'report_signal_ready')}")
-            print(f"   - report_signal_sent: {hasattr(self.worker_thread, 'report_signal_sent')}")
-            print(f"   - progress_signal_update: {hasattr(self.worker_thread, 'progress_signal_update')}")
-        
-        print(f"3. Slots connected:")
-        print(f"   - on_report_ready signature: {self.on_report_ready.__annotations__ if hasattr(self.on_report_ready, '__annotations__') else 'No annotations'}")
-        print(f"   - on_report_sent signature: {self.on_report_sent.__annotations__ if hasattr(self.on_report_sent, '__annotations__') else 'No annotations'}")
-        print("===================\n")
-    
-    def debug_report_flow(self):
-        """Debug the report generation flow"""
-        print("\n=== REPORT FLOW DEBUG ===")
-        
-        # Check parent and container relationships
-        parent = self.parent()
-        print(f"1. Has parent: {parent is not None}")
-        print(f"2. Parent type: {type(parent).__name__}")
-        
-        if isinstance(parent, SSCV_RightMainContainer):
-            print(f"3. Top container exists: {parent.top_container is not None}")
-            print(f"4. Mid container exists: {parent.mid_container is not None}")
-            
-            # Check top container violations
-            if hasattr(parent.top_container, 'get_current_violations'):
-                violations = parent.top_container.get_current_violations()
-                print(f"5. Current violations: {violations}")
-        
-        # Check generator
-        print(f"6. Generator initialized: {self.generator is not None}")
-        print("===================\n")
 
 
 class SSCV_RightMainContainer(QWidget):

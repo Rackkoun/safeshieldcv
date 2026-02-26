@@ -1,17 +1,14 @@
 # file safeshield/frontend/sscv-desktop-app/widgets/webcam_widget.py
-import os
+
 import onnxruntime as onnxrt
 print(f"[WEBCAM DEBUG]: {onnxrt.get_device()}")  # should print "CPU"
 import sys
 from pathlib import Path
-# import onnxruntime as onnxrt
-# print(onnxrt.get_device())  # should print "CPU"
-# import cv2
 import numpy as np
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QPushButton, QLabel
+    QWidget, QVBoxLayout, QLabel
 )
-from PyQt6.QtGui import QColor, QPalette, QImage, QPixmap, QFont
+from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from datetime import datetime
 
@@ -27,8 +24,6 @@ class SSCV_YOLOONNXDetector:
     """
     def __init__(self, model_path, conf_threshold=0.45):
         # to avoid: ImportError: DLL load failed while importing onnxruntime_pybind11_state: A dynamic link library (DLL) initialization routine failed.
-        # import onnxruntime as onnxrt
-        # print(onnxrt.get_device())  # should print "CPU"
         self.conf_threshold = conf_threshold
 
         try:
@@ -107,12 +102,6 @@ class SSCV_YOLOONNXDetector:
         # run inference
         outputs = self.session.run([self.output_name], {self.input_name: input_image})
         preds = outputs[0]
-        # print(
-        #     "[DEBUG] ONNX output:",
-        #     preds.shape,
-        #     "min:", preds.min(),
-        #     "max:", preds.max()
-        # )
         # postprocess
         detections = self.postprocess(outputs, original_shape)
         return detections
@@ -121,12 +110,9 @@ class SSCV_YOLOONNXDetector:
 class WebcamProcessing(QWidget):
     """Widget class for displaying webcam feed with YOLO detection"""
     violation_detected_sgn = pyqtSignal(list, str)
-    # ppe_status_sgn = pyqtSignal(list)
 
     def __init__(self, model_path=None, conf_threshold=0.45):
         super().__init__()
-        print(f"[WEBCAM] model_path received: {model_path}")
-        print(f"[WEBCAM] file exists? {Path(model_path).exists() if model_path else False}")
         self.cap = None
         self.prev_time = datetime.now()
         self.timer = QTimer()
@@ -150,14 +136,11 @@ class WebcamProcessing(QWidget):
         project_root = Path(__file__).resolve().parents[3]
         self.evidence_dir = project_root / "daily_violations" / datetime.now().strftime("%Y-%m-%d")
         self.evidence_dir.mkdir(parents=True, exist_ok=True)
-        print(f"[DEBUG] Evidence will be saved to: {self.evidence_dir.absolute()}")
         # init detector only if model_path is provided
         self.detector = None
         if model_path and Path(model_path).exists():
             try:
                 self.detector = SSCV_YOLOONNXDetector(model_path, conf_threshold)
-                if self.detector:
-                    print(f"Detector initialized with{len(self.classes)} classes.")
             except Exception as e:
                 print(f"Error initializing detector: {e}")
         else:
@@ -279,7 +262,6 @@ class WebcamProcessing(QWidget):
         # check missing ppe
         missing_items = self.required_ppe - detected_items
         # send missing ppe to ui for real-time display
-        # self.ppe_status_sgn.emit([f"Missing {item}" for item in missing_items])
         if missing_items:
             # emit signal immediately for real time ui update
             self.violation_detected_sgn.emit(list(missing_items), None)
@@ -289,7 +271,7 @@ class WebcamProcessing(QWidget):
             
             elapsed_missing = (now - self.violation_start_time).seconds
             cv2.putText(
-                frame, f"Missing: {', '.join(missing_items)} ({elapsed_missing})",
+                frame, f"Missing: {', '.join(missing_items)}", # ({elapsed_missing})",
                 (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                 (0, 0, 255), 2
             )
@@ -302,11 +284,6 @@ class WebcamProcessing(QWidget):
             # ppe detected again
             # check grace period if violation was active
             if self.violation_active:
-                elapsed_since_save = (now - self.violation_saved_time).seconds
-                if elapsed_since_save <= self.grace_period_after_save:
-                    print("[INFO] PPE detected during grace period. Clearing violations.")
-                else:
-                    print("[INFO] Violation cycle completed")
                 # reset everything
                 self.violation_active = False
                 self.violation_saved_time = None
@@ -347,7 +324,6 @@ class WebcamProcessing(QWidget):
         abs_path = str(filename.absolute())
         success = cv2.imwrite(abs_path, frame)
         if success:
-            print(f"[ALERT] Violation successfully saved at: {abs_path}")
             # emit signal
             self.violation_detected_sgn.emit(list(missing_items), str(abs_path))
         else:

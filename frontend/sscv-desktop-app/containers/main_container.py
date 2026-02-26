@@ -95,7 +95,6 @@ class SafeShieldCV(QWidget):
             # display image in middel panel if available
             if filename and os.path.exists(filename):
                 # add image to list
-                # right_panel.mid_container.display_image(filename)
                 from PyQt6.QtWidgets import QListWidgetItem
                 from PyQt6.QtCore import Qt
 
@@ -109,7 +108,3 @@ class SafeShieldCV(QWidget):
                     mid.image_list.addItem(item)
 
                 mid.display_image(filename)
-    
-    # def handle_report_generated(self, report_data):
-    #     # handle report generated
-    #     print(f"Report generated:{report_data['subject']}")

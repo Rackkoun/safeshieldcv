@@ -1,6 +1,6 @@
 # file backend/app/api/sscv_api.py
 
-import os
+# import os
 from pathlib import Path
 import base64
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks
@@ -20,7 +20,6 @@ from app.schemas.sscv_incident_schema import (
     IncidentCreate, IncidentResponse, ReportRequest, ReportResponse, EmailSendRequest
 )
 from app.services.sscv_ollama_service import ollama_service
-from app.services.sscv_incident_service import create_incident, get_incidents
 from app.services.sscv_email_service import email_service
 
 logger = logging.getLogger(__name__)
@@ -71,7 +70,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Initialize services
-# ollama_service = SSCVOllamaClientService()
 # health and root
 @app.get("/")
 async def root():
@@ -143,7 +141,7 @@ async def create_incident_endpoint(
         
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to create incident: {e}")
+        # logger.error(f"Failed to create incident: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create incident: {str(e)}"
@@ -195,11 +193,7 @@ async def generate_ppe_report_endpoint(
     db: Session = Depends(get_db)
 ):
     """Generate PPE violation report using Ollama and save to database"""
-    try:
-        logger.info(f"Generating report for: {request.missing_items} at {request.location}")
-        logger.info(f"Received {len(request.image_ref)} image references")
-        logger.info(f"Received {len(request.image_data)} image data items")
-        
+    try:        
         # Save evidence images if provided
         saved_image_paths = []
         if request.image_data and len(request.image_data) > 0:
@@ -230,7 +224,6 @@ async def generate_ppe_report_endpoint(
                     # Save file
                     filepath.write_bytes(image_bytes)
                     saved_image_paths.append(str(filepath))
-                    logger.info(f"Saved evidence image: {filename}")
                     
                 except Exception as e:
                     logger.error(f"Failed to save image {image_ref}: {e}")
@@ -262,12 +255,9 @@ async def generate_ppe_report_endpoint(
         db.commit()
         db.refresh(incident)
         
-        logger.info(f"[GENERATE PPE] Created incident record: ID={incident.id}")
-        
         # Create subject
         clean_items = [item.replace('no_', '') for item in request.missing_items]
         subject = f"PPE Violation: {', '.join(clean_items)} at {request.location}"
-        logger.warning(f"[SSCV_API::GENERATE PPE](report text):\n{report_text}")
         return ReportResponse(
             subject=subject,
             body=report_text,
@@ -277,7 +267,6 @@ async def generate_ppe_report_endpoint(
         )
         
     except Exception as e:
-        logger.error(f"Failed to generate report: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate report: {str(e)}"

@@ -1,4 +1,4 @@
-# file database.py
+# file safeshieldcv/backend/app/database.py
 
 import os
 from pathlib import Path

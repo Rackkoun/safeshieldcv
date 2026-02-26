@@ -8,7 +8,6 @@ from email.mime.image import MIMEImage
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
-import os
 
 from app.configs.config import settings
 
@@ -23,10 +22,6 @@ class SSCVEmailService:
         self.smtp_server = settings.EMAIL_SMTP_SERVER
         self.smtp_port = settings.EMAIL_SMTP_PORT
         self.evidence_base_dir = settings.EVIDENCE_BASE_DIR
-
-        logger.info(f"Email service initialized for: {self.sender_email}")
-        logger.info(f"SMTP Server: {self.smtp_server}:{self.smtp_port}")
-        logger.info(f"Evidence base dir: {self.evidence_base_dir}")
     
     def send_incident_email(
         self,
@@ -51,7 +46,6 @@ class SSCVEmailService:
         # Validate configuration
         if not self.sender_email or not self.sender_password:
             error_msg = "Email not configured in backend - missing sender or password"
-            logger.error(error_msg)
             return False, error_msg
         
         if not recipients:
@@ -60,7 +54,6 @@ class SSCVEmailService:
             return False, error_msg
         
         log_prefix = f"[{incident_id}] " if incident_id else "[EMAIL] "
-        logger.info(f"{log_prefix}Preparing email to: {recipients}")
         
         try:
             msg = MIMEMultipart()
@@ -76,27 +69,23 @@ class SSCVEmailService:
             # Attach evidence images
             attached_count = 0
             if evidence_images:
-                logger.info(f"{log_prefix}Looking for {len(evidence_images)} evidence images")
                 for image_ref in evidence_images:
                     try:
                         image_name = Path(image_ref).name
                         image_path = self._find_image_path(image_name, incident_date=incident_date)
                         if image_path and image_path.exists():
-                            logger.info(f"{log_prefix}Found image at: {image_path}")
                             with open(image_path, "rb") as f:
                                 img_data = f.read()
                                 img = MIMEImage(img_data)
                                 img.add_header('Content-Disposition', 'attachment', filename=image_path.name)
                                 msg.attach(img)
                             attached_count += 1
-                            logger.info(f"{log_prefix}Attached image: {image_path.name}")
                         else:
                             logger.warning(f"{log_prefix}Image not found: {image_name}")
                     except Exception as e:
                         logger.error(f"{log_prefix}Failed to attach image {image_ref}: {e}")
             
             # Send email
-            logger.info(f"{log_prefix}Connecting to SMTP server: {self.smtp_server}:{self.smtp_port}")
             server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30)
             server.starttls()
             server.login(self.sender_email, self.sender_password)
@@ -106,13 +95,10 @@ class SSCVEmailService:
             message = f"Email sent to {len(recipients)} recipient(s)"
             if attached_count > 0:
                 message += f" with {attached_count} attachment(s)"
-            
-            logger.info(f"✅ {log_prefix}{message}")
             return True, message
             
         except Exception as e:
             error_msg = f"Failed to prepare or send email: {str(e)}"
-            logger.error(f"❌ {log_prefix}{error_msg}")
             return False, error_msg
     
     def _find_image_path(self, image_name: str, incident_date: str = None) -> Optional[Path]:
@@ -120,9 +106,7 @@ class SSCVEmailService:
         search_paths = self._get_search_paths(image_name, incident_date=incident_date)
         for path in search_paths:
             if path.exists():
-                logger.debug(f"Found image at: {path}")
                 return path
-        logger.warning(f"Image not found: {image_name}")
         return None
     
     def _get_search_paths(self, image_name: str, incident_date: str = None) -> List[Path]:
@@ -144,7 +128,6 @@ class SSCVEmailService:
     def test_connection(self) -> bool:
         """Test email connection"""
         if not self.sender_email or not self.sender_password:
-            logger.warning("Email test: No sender or password configured")
             return False
         try:
             server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10)
@@ -152,10 +135,8 @@ class SSCVEmailService:
             server.login(self.sender_email, self.sender_password)
             server.noop()
             server.quit()
-            logger.info("✅ Email connection test successful")
             return True
         except Exception as e:
-            logger.error(f"❌ Email connection test failed: {e}")
             return False
 
 # Singleton instance

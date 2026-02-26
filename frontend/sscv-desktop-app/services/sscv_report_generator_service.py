@@ -15,11 +15,11 @@ class SSCVReportGeneratorService:
     """Backend API client for report generation and email sending"""
     
     def __init__(self, backend_api_url: str):
-        logger.info(f"SSCVREPORTGEN INIT: api_url: {backend_api_url}")
+        # logger.info(f"SSCVREPORTGEN INIT: api_url: {backend_api_url}")
         self.backend_api_url = backend_api_url.rstrip('/')
         self._last_incident_id: Optional[int] = None
         
-        logger.info(f"ReportGenerator initialized: {self.backend_api_url}")
+        # logger.info(f"ReportGenerator initialized: {self.backend_api_url}")
     
     def generate_report(self, missing_items: List[str], image_paths: List[str] = None, 
                        location: str = "Site Area") -> Dict:
@@ -39,7 +39,6 @@ class SSCVReportGeneratorService:
                         encoded = base64.b64encode(image_bytes).decode('utf-8')
                         image_refs.append(path.name)
                         image_data_list.append(encoded)
-                        logger.debug(f"Added image: {path.name} ({len(encoded)} chars)")
             
             # Prepare request payload
             payload = {
@@ -70,9 +69,6 @@ class SSCVReportGeneratorService:
             if response.status_code == 200:
                 result = response.json()
                 self._last_incident_id = result.get("incident_id")
-                logger.info(f"✅ Report generated: {self._last_incident_id}")
-                logger.info(f"✅ Report subject: {result.get('subject')}")
-                logger.info(f"✅ Report body preview: {result.get('body')[:100]}...")
                 return result
             else:
                 return {
@@ -102,24 +98,18 @@ class SSCVReportGeneratorService:
                 "email_sent": False
             }
         
-        try:
-            logger.info(f"Sending email for incident {incident_id} to {recipients}")
-            
+        try:            
             response = requests.post(
                 f"{self.backend_api_url}/incidents/{incident_id}/send-email",
                 json={"recipients": recipients},
                 timeout=60
             )
             
-            logger.info(f"Email response status: {response.status_code}")
-            
             if response.status_code == 200:
                 result = response.json()
-                logger.info(f"✅ Email result: {result.get('message')}")
                 return result
             else:
                 error_msg = f"Backend error: {response.status_code} - {response.text}"
-                logger.error(f"❌ {error_msg}")
                 return {
                     "success": False,
                     "message": error_msg,
@@ -156,19 +146,12 @@ class SSCVReportGeneratorService:
     def health_check(self) -> Dict:
         """Check backend health"""
         try:
-            logger.warning(f"BASE URL BEFORE: {self.backend_api_url}")
             base_url = self.backend_api_url.split('/api')[0] if '/api' in self.backend_api_url else self.backend_api_url
-            logger.warning(f"[BASE CHECK URL AFTER] (0): {base_url}")
             health_url = f"{base_url}/health"
-            logger.warning(f"[HEALTH CHECK URL AFTER] (1): {health_url}")
-            
-            logger.info(f"Checking health at: {health_url}")
-            
             response = requests.get(health_url, timeout=5)
             
             if response.status_code == 200:
                 health_data = response.json()
-                logger.info(f"[^u^][Health check successful]: {health_data.get('status')}")
                 return {
                     "status": health_data.get("status", "unknown"),
                     "backend": True,
@@ -177,7 +160,6 @@ class SSCVReportGeneratorService:
                     "data": health_data
                 }
             else:
-                logger.warning(f"[x_x][Health check failed]: HTTP {response.status_code}")
                 return {
                     "status": "error",
                     "backend": True,
@@ -186,7 +168,6 @@ class SSCVReportGeneratorService:
                 }
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"[SSCV REPORT GEN ERROR] Cannot connect to backend: {str(e)}")
             return {
                 "status": "error",
                 "backend": False,

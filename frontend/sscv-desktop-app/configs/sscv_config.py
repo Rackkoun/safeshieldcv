@@ -1,11 +1,10 @@
 # file frontend/sscv-desktop-app/configs/sscv_config.py
 # @author: Rackkoun
 
-import os
+# import os
 import json
 from pathlib import Path
 from typing import Dict, Any, List
-from datetime import datetime
 
 class SSCVConfig:
     """SSCV frontend config manager"""
@@ -13,7 +12,7 @@ class SSCVConfig:
         # navigate to project root
         project_root = Path(__file__).parents[3]
         self.config_dir = project_root / "configs"
-        print(f"[DEBUG DIR] at: {self.config_dir}")
+        # print(f"[DEBUG DIR] at: {self.config_dir}")
         
         self.config_file = self.config_dir / "frontend_config.json"
         self.config = self._load_config()
@@ -45,10 +44,7 @@ class SSCVConfig:
     @property
     def evidence_dir(self) -> str:
         return self.config["detection"]["evidence_dir"]
-    # extra features for charts and tables
-    # @property
-    # def get_incidents(self):
-    #     results = self.config["backend"][]
+
 # singleton instance
 _config_instance = None
 

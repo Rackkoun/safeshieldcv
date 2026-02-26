@@ -43,7 +43,3 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "false").lower() == "true"
 
 settings = Settings()
-
-if __name__ == "__main__":
-    print(f"[SETTINGS] Root patht: {SSCV_ROOT}")
-    print(f"[SETTINGS] pwd: {settings.DB_PASSWORD}")

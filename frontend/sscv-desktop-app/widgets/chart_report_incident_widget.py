@@ -2,8 +2,6 @@
 # @author: Rackkoun
 import plotly.graph_objects as go
 from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtCore import QTimer
-import json
 
 class SSCVIncidentReportChart(QWebEngineView):
     

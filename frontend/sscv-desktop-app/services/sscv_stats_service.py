@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 class SSCVStatisticServices:
     """Client API service for registered incidents"""
     def __init__(self, backend_api_url: str):
-        # logger.info(f"SSCVREPORTGEN INIT: api_url: {backend_api_url}")
         self.backend_api_url = backend_api_url.rstrip('/')
         self._last_incident_id: Optional[int] = None
     

@@ -16,10 +16,10 @@ BACKEND_CONFIG_FILE = CONFIGS_DIR / "backend_config.env"
 # check if file exists
 if BACKEND_CONFIG_FILE.exists():
     load_dotenv(BACKEND_CONFIG_FILE)
-    print(f" Loaded config from: {BACKEND_CONFIG_FILE}")
+    # print(f" Loaded config from: {BACKEND_CONFIG_FILE}")
 else:
     print(f"  Config file not found: {BACKEND_CONFIG_FILE}")
-    print("   Using default configuration")
+    # print("   Using default configuration")
 
 if __name__ == "__main__":
     host = os.getenv("SSCV_API_HOST", "127.0.0.1")
