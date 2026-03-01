@@ -1,101 +1,60 @@
 # SafeShieldCV (SSCV) 🛡️👷‍♂️
-Real-time AI-Powered PPE Detection & Reporting System
+Real-Time AI-Powered PPE Detection & Reporting System
 
-### 🏢 Developed by Team-TASK (Tchana, Aloknath, Subhadra, Krishna)
-Providing AI-automated digital solutions. We offer a full pipeline: Consultation, Implementation, Deployment, and Services.
+### 🏢 Developed by Team TASK
+
+
+
+Team TASK (Tchana • Aloknath • Subhadra • Krishna) develops AI-powered digital safety solutions with a complete pipeline:
+
+- Consultation
+- Implementation
+- Deployment
+- Support
+
+### Logo
+
+![SSCV Logo](./sscv_docs_images/SafeShieldCV_Logo.png)
 
 ### 📝 Project Overview
-SafeShieldCV is a proactive industrial safety solution designed to automate PPE (Personal Protective Equipment) monitoring. Utilizing Computer Vision and Large Language Models (LLMs), the system identifies safety violations in real-time, documents evidence, and automates the reporting workflow for supervisors.
 
-In high-risk environments, human oversight is often inconsistent. SafeShieldCV provides 24/7 vigilance, ensuring that helmet, vest, and glove violations are caught and reported instantly to maintain a zero-incident culture.
+SafeShieldCV is a proactive industrial safety system designed to automate PPE (Personal Protective Equipment) compliance monitoring.
 
-📂 Project Structure
+- Detects PPE violations in real time
+- Captures visual evidence
+- Generates automated safety reports
+- Notifies supervisors instantly
 
-```
-├── 📁 backend
-│   └── 🐍 main.py
-├── 📁 configs
-│   └── ⚙️ backend_config.env
-│   └── 📄 frontend_config.json
-├── 📁 frontend
-│   └── 📁 sscv-desktop-app
-│       └── 🐍 app.py
-├── 📁 models
-├── 📁 notebooks
-├── ⚙️ .gitignore
-├── 📝 README.md
-└── 📄 requirements.txt
-```
+In high-risk environments, human monitoring can be inconsistent. SafeShieldCV provides continuous 24/7 monitoring to ensure that helmet, vest, and glove violations are detected and documented, supporting a zero-incident safety culture.
+
+
+### 🚀 Key Features
+
+- Real-time PPE detection using YOLO and OpenCV
+- Desktop dashboard built with PyQt6
+- FastAPI backend architecture
+- Automated safety report generation using LLMs
+- PostgreSQL incident database
+- Email alert system
+- Incident statistics visualization
+
+
+### UI Dashboard
+
+![SSCV Desktop App](./sscv_docs_images/sscv_app_overview.png)
+
+
+### 🏗️ System Architecture
+
+View the full [👉 system architecture](https://github.com/Rackkoun/safeshieldcv/wiki/Architecture)
+
 
 ### 🎯 Target Audience
 - Construction Site Managers
 - Warehouse Safety Officers
 - Manufacturing Compliance Teams
 
-### Prerequisites
 
-Ensure the following tools are installed before proceeding:
+### How to use SSCV?
 
-- Python 3.11.3  
-- pyenv  
-- pip  
-- Git  
-
-Make sure you have forked the repository before setting up the environment.
-
-
-### Set up your Environment
-
-
-
-#### **`macOS`** type the following commands : 
-
-- For installing the virtual environment you can either use the [Makefile](Makefile) and run `make setup` or install it manually with the following commands:
-
-     ```BASH
-    make setup
-    ```
-    After that active your environment by following commands:
-    ```BASH
-    source .sscvenv/bin/activate
-    ```
-Or ....
-- Install the virtual environment and the required packages by following commands:
-
-    ```BASH
-    pyenv local 3.11.3
-    python -m venv .sscvenv
-    source .sscvenv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    ```
-    
-#### **`WindowsOS`** type the following commands :
-
-- Install the virtual environment and the required packages by following commands.
-
-   For `PowerShell` CLI :
-
-    ```PowerShell
-    pyenv local 3.11.3
-    python -m venv .sscvenv
-    .sscvenv\Scripts\Activate.ps1
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-    ```
-
-    For `Git-bash` CLI :
-  
-    ```BASH
-    pyenv local 3.11.3
-    python -m venv .sscvenv
-    source .sscvenv/Scripts/activate
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-    ```
-
-    **`Note:`**
-    If you encounter an error when trying to run `pip install --upgrade pip`, try using the following command:
-    ```Bash
-    python.exe -m pip install --upgrade pip
-    ```
+For installation and usage instructions, please visit the [👉 SSCV Wiki page](https://github.com/Rackkoun/safeshieldcv/wiki)
